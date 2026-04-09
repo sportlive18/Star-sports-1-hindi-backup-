@@ -168,8 +168,28 @@ line-height:1.6;
     streamUrl:"https://jiotvpllive.cdn.jio.com/bpk-tv/Star_Sports_HD1_Hindi_BTS/output/index.mpd",
     keyId:"400131994b445d8c8817202248760fda",
     key:"2d56cb6f07a75b9aff165d534ae2bfc4",
-    cookieUrl:"https://allrounder-live2.pages.dev/api/cookie.json"
+    cookieUrls:[
+      "https://allrounder-live2.pages.dev/api/cookie.json",
+      "https://sayan10-sportlink-cookies.pages.dev/api/cookie.json"
+    ]
   };
+
+  // Tries each cookie URL in order; returns the first valid cookie string found
+  async function fetchCookieWithFallback(urls){
+    for(const url of urls){
+      try{
+        const response = await fetch(url, {cache:"no-store"});
+        if(!response.ok) continue;
+        const data = await response.json();
+        if(data.cookie){
+          return data.cookie;
+        }
+      }catch(e){
+        // URL failed — try next
+      }
+    }
+    return "";
+  }
 
   document.addEventListener("DOMContentLoaded",async()=>{
 
@@ -189,9 +209,9 @@ line-height:1.6;
     ui.configure({
   addBigPlayButton: true,
   controlPanelElements: [
-    "mute",           // First - volume/mute button
-    "play_pause",     // Second - play/pause button  
-    "time_and_duration", // Third - timeline timings (00:00 / 00:00)
+    "mute",
+    "play_pause",
+    "time_and_duration",
     "spacer",
     "quality",
     "picture_in_picture",
@@ -215,13 +235,7 @@ line-height:1.6;
       }
     });
 
-    let cookieValue="";
-
-    try{
-      const response=await fetch(CONFIG.cookieUrl,{cache:"no-store"});
-      const data=await response.json();
-      cookieValue=data.cookie||"";
-    }catch(e){}
+    const cookieValue = await fetchCookieWithFallback(CONFIG.cookieUrls);
 
     if(cookieValue){
       player.getNetworkingEngine().registerRequestFilter((type,request)=>{
